@@ -5,32 +5,27 @@ date: "9/9/2020"
 output: html_document
 ---
 ### Analyzing the Relationship Between Internet Access and Interstructural Population Density
-
 <br>
-
 This dataset is assembled with the intention of analyzing the extent to which internet access is a function of interstructural population density. It is well documented that internet access increases with regional population density: A downtown city center will undoubtedly have greater access than a rural farm town. This dataset attempts to test (or, rather, provide a means to test) whether the relationship between internet access and density holds true at the micro-scale; by assessing individual households across the state of California.
-
 <br>
 
 The following variables are included in the dataset:
-<br>
-BLD: Units per structure
-<br>
-NP: Number of persons per household
-<br>
-HINCP/OCPIP: Gross rent/owner costs as a percentage of household income
-<br>
-ACR: Lot size
-<br>
-TEN: Tenure
-<br>
-ACCESS: Internet access
 
 <br>
+BLD: Units per structure (continuous)
 <br>
+NP: Number of persons per household (continuous)
+<br>
+HINCP/OCPIP: Gross rent/owner costs as a percentage of household income (continuous)
+<br>
+ACR: Lot size (continuous)
+<br>
+TEN: Tenure (categorical)
+<br>
+ACCESS: Internet access (categorical)
 
+<br>
 This dataset includes a total of 378,817 observations.
-
 <br>
 
 ```{r load libraries,message=FALSE, results='hide'}
@@ -51,8 +46,7 @@ hh_data <- get_pums(variables = c("BLD",
                                   "OCPIP",
                                   "ACR",
                                   "TEN", 
-                                  "ACCESS",
-                                  "HISPEED"),
+                                  "ACCESS"),
                     state = "CA",
                     year = 2018,
                     survey = "acs1")

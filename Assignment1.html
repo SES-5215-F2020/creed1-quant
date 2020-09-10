@@ -371,13 +371,10 @@ summary {
 
 <div id="analyzing-the-relationship-between-internet-access-and-interstructural-population-density" class="section level3">
 <h3>Analyzing the Relationship Between Internet Access and Interstructural Population Density</h3>
-<p><br></p>
-<p>This dataset is assembled with the intention of analyzing the extent to which internet access is a function of interstructural population density. It is well documented that internet access increases with regional population density: A downtown city center will undoubtedly have greater access than a rural farm town. This dataset attempts to test (or, rather, provide a means to test) whether the relationship between internet access and density holds true at the micro-scale; by assessing individual households across the state of California.</p>
-<p><br></p>
-<p>The following variables are included in the dataset: <br> BLD: Units per structure <br> NP: Number of persons per household <br> HINCP/OCPIP: Gross rent/owner costs as a percentage of household income <br> ACR: Lot size <br> TEN: Tenure <br> ACCESS: Internet access</p>
-<p><br> <br></p>
-<p>This dataset includes a total of 378,817 observations.</p>
-<p><br></p>
+<p><br> This dataset is assembled with the intention of analyzing the extent to which internet access is a function of interstructural population density. It is well documented that internet access increases with regional population density: A downtown city center will undoubtedly have greater access than a rural farm town. This dataset attempts to test (or, rather, provide a means to test) whether the relationship between internet access and density holds true at the micro-scale; by assessing individual households across the state of California. <br></p>
+<p>The following variables are included in the dataset:</p>
+<p><br> BLD: Units per structure (continuous) <br> NP: Number of persons per household (continuous) <br> HINCP/OCPIP: Gross rent/owner costs as a percentage of household income (continuous) <br> ACR: Lot size (continuous) <br> TEN: Tenure (categorical) <br> ACCESS: Internet access (categorical)</p>
+<p><br> This dataset includes a total of 378,817 observations. <br></p>
 <pre class="r"><code>library(tidycensus)
 library(tidyverse)</code></pre>
 <pre class="r"><code>hh_vars_2018 &lt;- pums_variables %&gt;%
@@ -391,14 +388,13 @@ library(tidyverse)</code></pre>
                                   &quot;OCPIP&quot;,
                                   &quot;ACR&quot;,
                                   &quot;TEN&quot;, 
-                                  &quot;ACCESS&quot;,
-                                  &quot;HISPEED&quot;),
+                                  &quot;ACCESS&quot;),
                     state = &quot;CA&quot;,
                     year = 2018,
                     survey = &quot;acs1&quot;)</code></pre>
 <pre><code>## Getting data from the 2018 1-year ACS Public Use Microdata Sample</code></pre>
 <pre class="r"><code>hh_data</code></pre>
-<pre><code>## # A tibble: 378,817 x 14
+<pre><code>## # A tibble: 378,817 x 13
 ##    SERIALNO SPORDER  WGTP PWGTP    NP  HINCP GRPIP OCPIP ST    ACCESS ACR  
 ##    &lt;chr&gt;      &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;  &lt;chr&gt;
 ##  1 2018GQ0~       1     0    32     1 -60000     0     0 06    b      b    
@@ -411,8 +407,7 @@ library(tidyverse)</code></pre>
 ##  8 2018GQ0~       1     0    15     1 -60000     0     0 06    b      b    
 ##  9 2018GQ0~       1     0    11     1 -60000     0     0 06    b      b    
 ## 10 2018GQ0~       1     0   116     1 -60000     0     0 06    b      b    
-## # ... with 378,807 more rows, and 3 more variables: BLD &lt;chr&gt;, HISPEED &lt;chr&gt;,
-## #   TEN &lt;chr&gt;</code></pre>
+## # ... with 378,807 more rows, and 2 more variables: BLD &lt;chr&gt;, TEN &lt;chr&gt;</code></pre>
 </div>
 
 
