@@ -369,13 +369,50 @@ summary {
 </div>
 
 
-<div id="chads-r-markdown-file-created-for-ses-5215-analytic-methods-of-urban-planning-quantitative" class="section level1">
-<h1>Chad’s R Markdown File [Created for SES 5215, Analytic Methods of Urban Planning: Quantitative]</h1>
-<div id="assignment-1" class="section level2">
-<h2>Assignment 1</h2>
-<pre class="r"><code>2 + 2</code></pre>
-<pre><code>## [1] 4</code></pre>
-</div>
+<div id="analyzing-the-relationship-between-internet-access-and-interstructural-population-density" class="section level3">
+<h3>Analyzing the Relationship Between Internet Access and Interstructural Population Density</h3>
+<p><br></p>
+<p>This dataset is assembled with the intention of analyzing the extent to which internet access is a function of interstructural population density. It is well documented that internet access increases with regional population density: A downtown city center will undoubtedly have greater access than a rural farm town. This dataset attempts to test (or, rather, provide a means to test) whether the relationship between internet access and density holds true at the micro-scale; by assessing individual households across the state of California.</p>
+<p><br></p>
+<p>The following variables are included in the dataset: <br> BLD: Units per structure <br> NP: Number of persons per household <br> HINCP/OCPIP: Gross rent/owner costs as a percentage of household income <br> ACR: Lot size <br> TEN: Tenure <br> ACCESS: Internet access</p>
+<p><br> <br></p>
+<p>This dataset includes a total of 378,817 observations.</p>
+<p><br></p>
+<pre class="r"><code>library(tidycensus)
+library(tidyverse)</code></pre>
+<pre class="r"><code>hh_vars_2018 &lt;- pums_variables %&gt;%
+  distinct(year, survey, var_code, 
+           var_label, data_type, level) %&gt;%
+  filter(level == &quot;housing&quot;, year == 2018, survey == &quot;acs1&quot;)</code></pre>
+<pre class="r"><code>hh_data &lt;- get_pums(variables = c(&quot;BLD&quot;, 
+                                  &quot;NP&quot;, 
+                                  &quot;HINCP&quot;,
+                                  &quot;GRPIP&quot;,
+                                  &quot;OCPIP&quot;,
+                                  &quot;ACR&quot;,
+                                  &quot;TEN&quot;, 
+                                  &quot;ACCESS&quot;,
+                                  &quot;HISPEED&quot;),
+                    state = &quot;CA&quot;,
+                    year = 2018,
+                    survey = &quot;acs1&quot;)</code></pre>
+<pre><code>## Getting data from the 2018 1-year ACS Public Use Microdata Sample</code></pre>
+<pre class="r"><code>hh_data</code></pre>
+<pre><code>## # A tibble: 378,817 x 14
+##    SERIALNO SPORDER  WGTP PWGTP    NP  HINCP GRPIP OCPIP ST    ACCESS ACR  
+##    &lt;chr&gt;      &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt;  &lt;chr&gt;
+##  1 2018GQ0~       1     0    32     1 -60000     0     0 06    b      b    
+##  2 2018GQ0~       1     0    45     1 -60000     0     0 06    b      b    
+##  3 2018GQ0~       1     0   109     1 -60000     0     0 06    b      b    
+##  4 2018GQ0~       1     0   106     1 -60000     0     0 06    b      b    
+##  5 2018GQ0~       1     0     4     1 -60000     0     0 06    b      b    
+##  6 2018GQ0~       1     0    68     1 -60000     0     0 06    b      b    
+##  7 2018GQ0~       1     0    12     1 -60000     0     0 06    b      b    
+##  8 2018GQ0~       1     0    15     1 -60000     0     0 06    b      b    
+##  9 2018GQ0~       1     0    11     1 -60000     0     0 06    b      b    
+## 10 2018GQ0~       1     0   116     1 -60000     0     0 06    b      b    
+## # ... with 378,807 more rows, and 3 more variables: BLD &lt;chr&gt;, HISPEED &lt;chr&gt;,
+## #   TEN &lt;chr&gt;</code></pre>
 </div>
 
 
