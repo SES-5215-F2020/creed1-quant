@@ -1,0 +1,495 @@
+---
+title: 'Assignment 2'
+author: "Chadwick Reed"
+date: "9/13/2020"
+output: html_document
+---
+
+```{r load libraries,message=FALSE, results='hide'}
+library(tidyverse)
+library(tidycensus)
+library(ggplot2)
+library(prettyunits)
+library(scales)
+```
+
+```{r, message=FALSE}
+hh_data <- read_csv("assignment1[hh_data].csv")
+attach(hh_data)
+```
+
+### Basis for data selection
+
+This dataset is assembled with the intention of analyzing the extent to which internet access is a function of interstructural population density. It is well documented that internet access increases with regional population density: A downtown city center will undoubtedly have greater access than a rural farm town. This dataset attempts to test (or provide a means by which one could test) whether the relationship between internet access and density holds true at the micro-scale; by assessing individual households across the state of California.
+<br>
+
+The following variables are included in the dataset:
+
+<br>
+NP: Number of persons per household (continuous)
+<br>
+GRPIP/OCPIP: Gross rent/owner costs as a percentage of household income (continuous)
+<br>
+ACR: Lot size (categorical)
+<br>
+BLD: Units per structure (categorical)
+<br>
+TEN: Tenure (categorical)
+<br>
+ACCESS: Internet access (categorical)
+
+<br>
+This dataset includes a total of 378,817 observations.
+<br>
+
+### Continuous variables
+
+For each continuous variable in your dataset, calculate the sample mean, the sample standard deviation,
+the 95-percent confidence interval for the population mean, and the interquartile range. Create a
+histogram to illustrate the distribution of each variable and describe the distribution in a sentence or two.
+
+```{r}
+NP_summary <- summary(NP)
+NP_sd <- sd(NP, na.rm = TRUE)
+NP_pop_mean_int <- t.test(NP)
+GRPIP_summary <- summary(GRPIP)
+GRPIP_sd <- sd(GRPIP, na.rm = TRUE)
+GRPIP_pop_mean_int <- t.test(GRPIP)
+OCPIP_summary <- summary(OCPIP)
+OCPIP_sd <- sd(OCPIP, na.rm = TRUE)
+OCPIP_pop_mean_int <- t.test(OCPIP)
+```
+
+```{r}
+summary_table <- tibble(
+  Statistic = c("Sample mean",
+                 "Median",
+                "Standard deviation",
+                "Interquartile range",
+                "Population mean (95% confidence)"),
+  'Persons per household' = c(prettyNum(NP_summary["Mean"], digits=3),
+                                     NP_summary["Median"],
+                                     prettyNum(NP_sd, digits=3),
+                                     paste(NP_summary["1st Qu."],"to",
+                                           NP_summary["3rd Qu."]),
+                                     paste(prettyNum(NP_pop_mean_int$conf.int[1],
+                                                     digits=3), "to",
+                                           prettyNum(NP_pop_mean_int$conf.int[2],
+                                                     digits=3))),
+  'Rent as percentage of household income' = c(paste(prettyNum(GRPIP_summary["Mean"],
+                                           digits=3),"%"),
+                           paste(prettyNum(GRPIP_summary["Median"],
+                                           digits=3),"%"),
+                           paste(prettyNum(GRPIP_sd, digits=3),"%"),
+                           paste(prettyNum(GRPIP_summary["1st Qu."], 
+                                           digits=3),
+                                 "% to",
+                                 prettyNum(GRPIP_summary["3rd Qu."],
+                                           digits=3), "%"),
+                           paste(prettyNum(GRPIP_pop_mean_int$conf.int[1],
+                                           digits=3), "% to",
+                                 prettyNum(GRPIP_pop_mean_int$conf.int[2],
+                                           digits=3), "%")),
+ 'Ownership costs as percentage of household income' = c(paste(prettyNum(OCPIP_summary["Mean"],
+                                           digits=3),"%"),
+                           paste(prettyNum(OCPIP_summary["Median"],
+                                           digits=3),"%"),
+                           paste(prettyNum(OCPIP_sd, digits=3),"%"),
+                           paste(prettyNum(OCPIP_summary["1st Qu."], 
+                                           digits=3),
+                                 "% to",
+                                 prettyNum(OCPIP_summary["3rd Qu."],
+                                           digits=3), "%"),
+                           paste(prettyNum(OCPIP_pop_mean_int$conf.int[1],
+                                           digits=3), "% to",
+                                 prettyNum(OCPIP_pop_mean_int$conf.int[2],
+                                           digits=3), "%")))
+knitr::kable(summary_table, 
+             caption = "Characteristics of census tracts in California")
+```
+
+
+### NP: Number of persons per household
+
+This variable has a mean of approximately 3.5 with a standard deviation of just under two. It is right-skewed, with median value of three and a maximum recorded household size of twenty people.
+
+```{r, message=FALSE, results='hide'}
+ggplot(hh_data, aes(x = NP)) + 
+  geom_histogram(fill = "gray", color = "black") +
+  theme_bw() +
+  scale_x_continuous(name = "Persons per household") + 
+  scale_y_continuous(name = "Count") 
+```
+
+Summary:
+
+```{r}
+NP_summary <- summary(hh_data$NP)
+
+NP_summary
+```
+
+Standard deviation
+
+```{r}
+sd(hh_data$NP)
+```
+
+T-Test: 
+
+```{r}
+conf_int_NP <- t.test(hh_data$NP)
+
+conf_int_NP
+```
+
+
+### GRPIP: Gross rent as a percentage of household income
+
+This variable has a mean of approximately 13.53%. The first quartile and median values are both zero, and the standard deviation is actually greater than the distance between the mean and the minimum, which reflects the extent to which this data is right-skewed. I think this is indicates that this data needs to be cleaned, since zero must represent non-renting households? Looking at the broad dispersal of values recorded for this variable, I think it may make sense to use the mutate function to organize the data into bins.
+
+```{r, message=FALSE, results='hide'}
+ggplot(hh_data, aes(x = GRPIP)) + 
+  geom_histogram(fill = "gray", color = "black") +
+  theme_bw() +
+  scale_x_continuous(name = "Rent as proportion of household income") + 
+  scale_y_continuous(name = "Count") 
+```
+
+Summary:
+
+```{r}
+GRPIP_summary <- summary(hh_data$GRPIP)
+
+GRPIP_summary
+```
+Standard deviation:
+
+```{r}
+sd(hh_data$GRPIP)
+```
+
+T-Test:
+
+```{r}
+conf_int_GRPIP <- t.test(hh_data$GRPIP)
+
+conf_int_GRPIP
+```
+
+
+### OCPIP: Ownership costs as a percentage of household income
+
+Summary: This variable has a distribution that is similar to that of the preceding rental cost variable, but it is slightly less right-skewed. The mean is just under 15, the median is eight, and the third quartile is twenty two. 
+
+```{r, message=FALSE, results='hide'}
+ggplot(hh_data, aes(x = OCPIP)) + 
+  geom_histogram(fill = "gray", color = "black") +
+  theme_bw() +
+  scale_x_continuous(name = "Rent as proportion of household income") + 
+  scale_y_continuous(name = "Count") 
+```
+
+Summary:
+
+```{r}
+OCPIP_summary <- summary(hh_data$OCPIP)
+
+OCPIP_summary
+```
+
+Standard deviation:
+
+```{r}
+sd(hh_data$OCPIP)
+```
+
+T-Test:
+
+```{r}
+conf_int_OCPIP <- t.test(hh_data$OCPIP)
+
+conf_int_OCPIP
+```
+
+
+
+### Categorical variables
+
+For each categorical variable in your dataset, calculate the 95-percent confidence interval for the
+proportion of the population in each category.
+
+
+### ACR: Lot size
+
+```{r}
+lot_size_NA <- t.test (hh_data$ACR == "bb")
+lot_size_sub1 <- t.test(hh_data$ACR == "1")
+lot_size_1to10 <- t.test(hh_data$ACR == "2")
+lot_size_10plus <- t.test(hh_data$ACR == "3")
+```
+
+```{r}
+acr_table <- tibble(
+  `Lot Size`= c("N/A",
+                "<1 acre",
+                "1-10 acres",
+                "10+ acres"),
+  'Sample proportion' =c(paste(prettyNum(lot_size_NA$estimate*100,
+                                         digits=3), "%"),
+                         paste(prettyNum(lot_size_sub1$estimate*100,
+                                         digits=3), "%"),
+                         paste(prettyNum(lot_size_1to10$estimate*100,
+                                         digits=3), "%"),
+                         paste(prettyNum(lot_size_10plus$estimate*100,
+                                         digits=3), "%")),
+  '95-percent confidence interval' = c(paste(prettyNum(lot_size_NA$conf.int[1]*100, digits=3),
+                                             "% to ",
+                                             prettyNum(lot_size_NA$conf.int[2]*100, digits=3),
+                                             "%", sep=""),
+                                       paste(prettyNum(lot_size_sub1$conf.int[1]*100, digits=3),
+                                             "% to ",
+                                             prettyNum(lot_size_sub1$conf.int[2]*100, digits=3),
+                                             "%", sep=""),
+                                        paste(prettyNum(lot_size_1to10$conf.int[1]*100, digits=3),
+                                             "% to ",
+                                             prettyNum(lot_size_1to10$conf.int[2]*100, digits=3),
+                                             "%", sep=""),
+                                       paste(prettyNum(lot_size_10plus$conf.int[1]*100, digits=3),
+                                             "% to ",
+                                             prettyNum(lot_size_10plus$conf.int[2]*100, digits=3),
+                                             "%", sep="")))
+
+knitr::kable(acr_table, caption = "California lot sizes")
+```
+
+```{r}
+table(hh_data$ACR) / sum(table(hh_data$ACR))
+```
+
+
+### BLD: Units per structure
+
+```{r}
+bld_NA <- t.test (hh_data$BLD == "bb")
+bld_MH <- t.test(hh_data$BLD == "01")
+bld_single_d <- t.test(hh_data$BLD == "02")
+bld_single_a <- t.test(hh_data$BLD == "03")
+bld_2 <- t.test (hh_data$BLD == "04")
+bld_3to4 <- t.test(hh_data$BLD == "05")
+bld_5to9 <- t.test(hh_data$BLD == "06")
+bld_10to19 <- t.test(hh_data$BLD == "07")
+bld_20to49 <- t.test (hh_data$BLD == "08")
+bld_50plus <- t.test(hh_data$BLD == "09")
+bld_boat_rv_van<- t.test(hh_data$BLD == "10")
+```
+
+```{r}
+bld_shares <- tibble(
+  `Units per structure` = c("N/A",
+                            "Manufactured home",
+                            "Detached single family",
+                            "Attached single family",
+                            "<2 Apartments",
+                            "3-4 Apartments",
+                            "5-9 Apartments",
+                            "10-19 Apartments",
+                            "20-49 Apartments",
+                            "50+ Apartments",
+                            "Boat, RV or Van"),
+  'Sample proportion' =c(paste(prettyNum(bld_NA$estimate*100,
+                                         digits=3), "%"),
+                         paste(prettyNum(bld_MH$estimate*100,
+                                         digits=3), "%"),
+                         paste(prettyNum(bld_single_d$estimate*100,
+                                         digits=3), "%"),
+                         paste(prettyNum(bld_single_a$estimate*100,
+                                         digits=3), "%"),
+                         paste(prettyNum(bld_2$estimate*100,
+                                         digits=3), "%"),
+                         paste(prettyNum(bld_3to4$estimate*100,
+                                         digits=3), "%"),
+                         paste(prettyNum(bld_5to9$estimate*100,
+                                         digits=3), "%"),
+                         paste(prettyNum(bld_10to19$estimate*100,
+                                         digits=3), "%"),
+                         paste(prettyNum(bld_20to49$estimate*100,
+                                         digits=3), "%"),
+                         paste(prettyNum(bld_50plus$estimate*100,
+                                         digits=3), "%"),
+                         paste(prettyNum(bld_boat_rv_van$estimate*100,
+                                         digits=3), "%")),
+  '95-percent confidence interval' = c(paste(prettyNum(bld_NA$conf.int[1]*100, digits=3),
+                                             "% to ",
+                                             prettyNum(bld_NA$conf.int[2]*100, digits=3),
+                                             "%", sep=""),
+                                       paste(prettyNum(bld_MH$conf.int[1]*100, digits=3),
+                                             "% to ",
+                                             prettyNum(bld_MH$conf.int[2]*100, digits=3),
+                                             "%", sep=""),
+                                       paste(prettyNum(bld_single_d$conf.int[1]*100, digits=3),
+                                             "% to ",
+                                             prettyNum(bld_single_d$conf.int[2]*100, digits=3),
+                                             "%", sep=""),
+                                       paste(prettyNum(bld_single_a$conf.int[1]*100, digits=3),
+                                             "% to ",
+                                             prettyNum(bld_single_a$conf.int[2]*100, digits=3),
+                                             "%", sep=""),
+                                       paste(prettyNum(bld_2$conf.int[1]*100, digits=3),
+                                             "% to ",
+                                             prettyNum(bld_2$conf.int[2]*100, digits=3),
+                                             "%", sep=""),
+                                       paste(prettyNum(bld_3to4$conf.int[1]*100, digits=3),
+                                             "% to ",
+                                             prettyNum(bld_3to4$conf.int[2]*100, digits=3),
+                                             "%", sep=""),
+                                       paste(prettyNum(bld_5to9$conf.int[1]*100, digits=3),
+                                             "% to ",
+                                             prettyNum(bld_5to9$conf.int[2]*100, digits=3),
+                                             "%", sep=""),
+                                       paste(prettyNum(bld_10to19$conf.int[1]*100, digits=3),
+                                             "% to ",
+                                             prettyNum(bld_10to19$conf.int[2]*100, digits=3),
+                                             "%", sep=""),
+                                       paste(prettyNum(bld_20to49$conf.int[1]*100, digits=3),
+                                             "% to ",
+                                             prettyNum(bld_20to49$conf.int[2]*100, digits=3),
+                                             "%", sep=""),
+                                       paste(prettyNum(bld_50plus$conf.int[1]*100, digits=3),
+                                             "% to ",
+                                             prettyNum(bld_50plus$conf.int[2]*100, digits=3),
+                                             "%", sep=""),
+                                       paste(prettyNum(bld_boat_rv_van$conf.int[1]*100, digits=3),
+                                             "% to ",
+                                             prettyNum(bld_boat_rv_van$conf.int[2]*100, digits=3),
+                                             "%", sep="")))
+
+knitr::kable(bld_shares, caption = "California lot sizes")
+```
+
+```{r}
+table(hh_data$BLD) / sum(table(hh_data$BLD))
+```
+
+
+### TEN: Tenure
+
+```{r}
+ten_NA <- t.test (hh_data$TEN == "bb")
+ten_owned_loan <- t.test(hh_data$TEN == "1")
+ten_owned_noloan <- t.test(hh_data$TEN == "2")
+ten_rented <- t.test(hh_data$TEN == "3")
+ten_occ_nopay <- t.test (hh_data$TEN == "4")
+```
+
+```{r}
+ten_types <- tibble(`Tenure` = c("N/A",
+                                  "Owned with loan or mortgage",
+                                  "Owned without loan",
+                                  "Rented", "Occupied without payment"),
+                 `Sample proportion` = c(paste(prettyNum(ten_NA$estimate*100, 
+                                                         digits = 3), "%"),
+                                         paste(prettyNum(ten_owned_loan$estimate*100, 
+                                                         digits = 3), "%"),
+                                         paste(prettyNum(ten_owned_noloan$estimate*100, 
+                                                         digits = 3), "%"),
+                                         paste(prettyNum(ten_rented$estimate*100, 
+                                                         digits = 3), "%"),
+                                         paste(prettyNum(ten_occ_nopay$estimate*100, 
+                                                         digits = 3), "%")),
+                 `95-percent confidence interval` = c(
+                   paste(prettyNum(ten_NA$conf.int[1]*100, digits=3),
+                         "% to ",
+                         prettyNum(ten_NA$conf.int[2]*100, digits=3),
+                         "%", sep=""),
+                   paste(prettyNum(ten_owned_loan$conf.int[1]*100, digits=3),
+                         "% to ",
+                         prettyNum(ten_owned_loan$conf.int[2]*100, digits=3),
+                         "%", sep=""),
+                   paste(prettyNum(ten_owned_noloan$conf.int[1]*100, digits=3),
+                         "% to ",
+                         prettyNum(ten_owned_noloan$conf.int[2]*100, digits=3),
+                         "%", sep=""),
+                     paste(prettyNum(ten_rented$conf.int[1]*100, digits=3),
+                         "% to ",
+                         prettyNum(ten_rented$conf.int[2]*100, digits=3),
+                         "%", sep=""),
+                   paste(prettyNum(ten_occ_nopay$conf.int[1]*100, digits=3),
+                         "% to ",
+                         prettyNum(ten_occ_nopay$conf.int[2]*100, digits=3),
+                         "%", sep="")))
+
+                 knitr::kable(ten_types, caption = "California tenure types")
+```
+
+```{r}
+table(hh_data$TEN) / sum(table(hh_data$TEN))
+```
+
+
+### ACCESS: Internet access
+
+```{r}
+access_na <- t.test (hh_data$ACCESS == "b")
+access_yes <- t.test(hh_data$ACCESS == "1")
+access_yes_nopay<- t.test(hh_data$ACCESS == "2")
+access_no <- t.test(hh_data$ACCESS == "3")
+```
+
+```{r}
+net_access <- tibble(`Internet` = c("N/A",
+                                  "Access",
+                                  "Access, non-paying",
+                                  "No access"),
+                     'Sample proportion'= c(paste(prettyNum(access_na$estimate*100,
+                                                            digits = 3), "%"),
+                                            paste(prettyNum(access_yes$estimate*100,
+                                                            digits = 3), "%"),
+                                            paste(prettyNum(access_yes_nopay$estimate*100,
+                                                            digits = 3), "%"),
+                                            paste(prettyNum(access_no$estimate*100,
+                                                            digits = 3), "%")),
+                 '95-percent confidence interval' = 
+                   c(paste(prettyNum(access_na$conf.int[1]*100, 
+                                     digits=3), "% to ",
+                           prettyNum(access_na$conf.int[1]*100,
+                                     digits=3), "%"),
+                     paste(prettyNum(access_yes$conf.int[1]*100,
+                                     digits=3), "% to ",
+                           prettyNum(access_yes$conf.int[2]*100,
+                                     digits=3), "%"),
+                     paste(prettyNum(access_yes_nopay$conf.int[1]*100,
+                                     digits=3), "% to ",
+                           prettyNum(access_yes_nopay$conf.int[2]*100,
+                                     digits=3), "%"),
+                     paste(prettyNum(access_no$conf.int[1]*100,
+                                     digits=3), "% to ",
+                           prettyNum(access_no$conf.intk[2]*100,
+                                     digits=3), "%")))
+
+                 knitr::kable(net_access, caption = "California internet access")
+```
+
+```{r}
+table(hh_data$ACCESS) / sum(table(hh_data$ACCESS))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
