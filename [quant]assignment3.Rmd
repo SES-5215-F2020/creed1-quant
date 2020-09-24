@@ -1,0 +1,569 @@
+---
+title: "Assignment 3"
+author: "Chadwick Reed"
+date: "9/22/2020"
+output:
+   html_document:
+    toc: TRUE
+    toc_float: true
+    toc_depth: 4
+    message: FALSE
+    results: 'hide'
+    warning: FALSE
+    tidy: TRUE
+    error: TRUE
+---
+
+
+
+# Introduction
+
+
+This dataset is assembled with the intention of analyzing the extent to which internet access is a function of interstructural population density. It is well documented that internet access increases with regional population density: A downtown city center will undoubtedly have greater access than a rural farm town. This dataset attempts to test (or, rather, provide a means to test) whether the relationship between internet access and density holds true at the micro-scale; by assessing individual households across the state of California.
+
+
+The following variables are included in the dataset:
+
+
+__Continuous__ <br>
+NP: Number of persons per household <br>
+GRPIP: Gross rent as proportion of household income <br>
+OCPIP: Ownership costs as proportion of household income <br>
+
+
+__Categorical__ <br>
+BLD: Units per structure <br>
+ACR: Lot size <br>
+TEN: Tenure <br>
+ACCESS: Internet access <br>
+
+
+This dataset includes a total of 378,817 observations.
+
+
+```{r load libraries}
+library(tidyverse)
+library(tidycensus)
+library(ggplot2)
+library(prettyunits)
+library(scales)
+
+hh_data <- read_csv("hh_data.csv")
+attach(hh_data)
+hh_data_mod <- read_csv("hh_data.csv")
+attach(hh_data_mod)
+```
+
+_Data cleaning:_
+In the interest of making the findings of this assignment more meaningful, I replaced all zeroes in GRPIP and OCPIP columns with 'NA', so that they will be excluded from statistical testing. I then created a third column, HPIP (housing as proportion of income) which combines these two variables and eliminates the broad distinction between tenure types. Notably, however, over twenty thousand observations in recorded N/A in both the GRPIP and OCPIP columns.
+```{r}
+#Replacing zeroes with NA 
+hh_data_mod$GRPIP[hh_data_mod$GRPIP == 0] <- NA
+hh_data_mod$OCPIP[hh_data_mod$OCPIP == 0] <-NA
+hh_data_mod$ACR[hh_data_mod$ACR == "b"] <- NA
+hh_data_mod$BLD[hh_data_mod$BLD == "bb"] <- NA
+hh_data_mod$TEN[hh_data_mod$TEN == "b"] <- NA
+hh_data_mod$ACCESS[hh_data_mod$ACCESS == "b"] <- NA
+
+#Creating new column for HPIP variable
+hh_data_mod$HPIP <- ifelse(is.na(hh_data_mod$GRPIP), hh_data_mod$OCPIP, hh_data_mod$GRPIP)
+```
+
+
+# Relationships between two continuous variables
+
+## Number of persons per household (NP), rent as proportion of income (GRPIP)
+
+Weak/negligible, but statistically significant.
+```{r}
+correlation1 <- cor.test(hh_data_mod$NP, hh_data_mod$GRPIP)
+correlation1
+```
+```{r}
+ggplot(hh_data_mod, aes(x = NP, y = GRPIP)) + 
+    geom_point(size = 0.5, alpha = 0.25, position = "jitter") +
+    geom_smooth() +
+    theme_bw() +
+    scale_x_continuous(name = "Number of persons per household") +
+    scale_y_continuous(name = "Rent as proportion of household income") 
+```
+
+## Number of persons per household (NP), ownership cost as proportion of income (OCPIP)
+
+Weak/negligible, but statistically significant.
+```{r}
+correlation2 <- cor.test(hh_data_mod$NP, hh_data_mod$OCPIP)
+correlation2
+```
+```{r}
+ggplot(hh_data_mod, aes(x = NP, y = OCPIP)) + 
+    geom_point(size = 0.5, alpha = 0.25, position = "jitter") +
+    geom_smooth() +
+    theme_bw() +
+    scale_x_continuous(name = "Number of persons per household") +
+    scale_y_continuous(name = "Ownership costs as proportion of household income") 
+```
+
+## Number of persons per household (NP), housing cost as proportion of income (HPIP)
+
+Weak/negligible, but statistically significant.
+```{r}
+correlation3 <- cor.test(hh_data_mod$NP, hh_data_mod$HPIP)
+correlation3
+```
+```{r}
+ggplot(hh_data_mod, aes(x = NP, y = HPIP)) + 
+    geom_point(size = 0.5, alpha = 0.25, position = "jitter") +
+    geom_smooth() +
+    theme_bw() +
+    scale_x_continuous(name = "Number of persons per household") +
+    scale_y_continuous(name = "Housing costs as proportion of household income") 
+```
+
+
+# Relationships between continuous and non-binary categorical variables
+
+## Number of persons per household (NP), internet access (ACCESS)
+
+A significant relationship exists. As the boxplot illustrates, CA respondents without internet access tend to have fewer people per household than respondents with internet access.
+
+ANOVA test:
+```{r}
+anova <- aov(NP ~ ACCESS, data = hh_data_mod)
+
+summary(anova)
+```
+
+Tukey's HSD test:
+```{r}
+differences <- TukeyHSD(anova)
+
+as_tibble(cbind(pair = row.names(differences$ACCESS),
+                differences$ACCESS))
+```
+
+Boxplot:
+```{r}
+ggplot(hh_data_mod, aes(x = ACCESS, y = NP)) +
+  geom_boxplot() +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90)) +
+  scale_x_discrete(name = "Internet access",
+                   labels = c ("Access",
+                                  "Access, non-paying",
+                                  "No access")) +
+  scale_y_continuous(name = "Number of persons per household") 
+```
+
+## Number of persons per household (NP), lot size (ACR)
+
+A significant relationship exists. As the boxplot illustrates, respondents with lot sizes of 10 acres or greater are less likely to have more than three people per household.
+
+ANOVA test:
+```{r}
+anova <- aov(NP ~ ACR, data = hh_data_mod)
+
+summary(anova)
+```
+
+Tukey's HSD test:
+```{r}
+differences <- TukeyHSD(anova)
+
+as_tibble(cbind(pair = row.names(differences$ACR),
+                differences$ACR))
+```
+
+Boxplot:
+```{r}
+ggplot(hh_data_mod, aes(x = ACR, y = NP)) +
+  geom_boxplot() +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90)) +
+  scale_x_discrete(name = "Lot size",
+                   labels = c ("<1 acre",
+                "1-10 acres",
+                "10+ acres")) +
+  scale_y_continuous(name = "Number of persons per household") 
+```
+
+## Number of persons per household (NP), units per housing structure (BLD)
+
+A significant relationship exists. As the boxplot illustrates, the median number of people per household in housing structures of 50 unites or more is significantly lower than for any other category of multi-unit housing structure.
+
+ANOVA test:
+```{r}
+anova <- aov(NP ~ BLD, data = hh_data_mod)
+
+summary(anova)
+```
+
+Tukey's HSD test:
+```{r}
+differences <- TukeyHSD(anova)
+
+as_tibble(cbind(pair = row.names(differences$BLD),
+                differences$BLD))
+```
+
+Boxplot:
+```{r}
+ggplot(hh_data_mod, aes(x = BLD, y = NP)) +
+  geom_boxplot() +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90)) +
+  scale_x_discrete(name = "Units per housing structure",
+                   labels = c ( "Manufactured home",
+                            "Detached single family",
+                            "Attached single family",
+                            "<2 Apartments",
+                            "3-4 Apartments",
+                            "5-9 Apartments",
+                            "10-19 Apartments",
+                            "20-49 Apartments",
+                            "50+ Apartments",
+                            "Boat, RV or Van")) +
+  scale_y_continuous(name = "Number of persons per household") 
+```
+
+## Number of persons per household (NP), housing tenure (TEN)
+
+There exists a significant relationship. The boxplot does not communicate a clear theme, although the distributions of the NP variable are clearly different for each housing tenure category.
+
+ANOVA test:
+```{r}
+anova <- aov(NP ~ TEN, data = hh_data_mod)
+
+summary(anova)
+```
+
+Tukey's HSD:
+```{r}
+differences <- TukeyHSD(anova)
+
+as_tibble(cbind(pair = row.names(differences$TEN),
+                differences$TEN))
+```
+
+Boxplot:
+```{r}
+ggplot(hh_data_mod, aes(x = TEN, y = NP)) +
+  geom_boxplot() +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90)) +
+  scale_x_discrete(name = "Housing tenure",
+                   labels = c ( "Owned with loan or mortgage",
+                                  "Owned without loan",
+                                  "Rented", "Occupied without payment")) +
+scale_y_continuous(name = "Number of persons per household")
+```
+
+## Housing cost as proportion of income (HPIP), internet access (ACCESS)
+
+The relationship is significant. As the boxplot illustrates, housing costs tend to be a larger proportion of total household income in respondents without internet access.
+
+ANOVA test:
+```{r}
+anova <- aov(HPIP ~ ACCESS, data = hh_data_mod)
+
+summary(anova)
+```
+
+Tukey's HSD test:
+```{r}
+differences <- TukeyHSD(anova)
+
+as_tibble(cbind(pair = row.names(differences$ACCESS),
+                differences$ACCESS))
+```
+
+Boxplot:
+```{r}
+ggplot(hh_data_mod, aes(x = ACCESS, y = HPIP)) +
+  geom_boxplot() +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90)) +
+  scale_x_discrete(name = "Internet access",
+                   labels = c ("Access",
+                                  "Access, non-paying",
+                                  "No access")) +
+  scale_y_continuous(name = "Housing cost as proportion of income") 
+```
+
+## Housing cost as proportion of income (HPIP), lot size (ACR)
+
+The relationship is significant. As the boxplot illustrates, housing cost as a proportion of income seems to decrease as lot size increases.
+
+ANOVA test:
+```{r}
+anova <- aov(HPIP ~ ACR, data = hh_data_mod)
+
+summary(anova)
+```
+
+Tukey's HSD test:
+```{r}
+differences <- TukeyHSD(anova)
+
+as_tibble(cbind(pair = row.names(differences$ACR),
+                differences$ACR))
+```
+
+Boxplot:
+```{r}
+ggplot(hh_data_mod, aes(x = ACR, y = HPIP)) +
+  geom_boxplot() +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90)) +
+  scale_x_discrete(name = "Lot size",
+                   labels = c ("<1 acre",
+                "1-10 acres",
+                "10+ acres")) +
+  scale_y_continuous(name = "Housing cost as proportion of income") 
+```
+
+## Housing cost as proportion of income (HPIP), units per housing structure (BLD)
+
+The relationship is significant. As the boxplot illustrates, the proportion of housing cost to household income tends to be highest for residents of buildings with 10 or more housing units.
+
+ANOVA test:
+```{r}
+anova <- aov(HPIP ~ BLD, data = hh_data_mod)
+
+summary(anova)
+```
+
+Tukey's HSD test:
+```{r}
+differences <- TukeyHSD(anova)
+
+as_tibble(cbind(pair = row.names(differences$BLD),
+                differences$BLD))
+```
+
+Boxplot:
+```{r}
+ggplot(hh_data_mod, aes(x = BLD, y = HPIP)) +
+  geom_boxplot() +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90)) +
+  scale_x_discrete(name = "Units per housing structure",
+                   labels = c ( "Manufactured home",
+                            "Detached single family",
+                            "Attached single family",
+                            "<2 Apartments",
+                            "3-4 Apartments",
+                            "5-9 Apartments",
+                            "10-19 Apartments",
+                            "20-49 Apartments",
+                            "50+ Apartments",
+                            "Boat, RV or Van")) +
+  scale_y_continuous(name = "Housing cost as proportion of income") 
+```
+
+## Housing cost as proportion of income (HPIP), housing tenure (TEN)
+
+The relationship is significant. As the boxplot illustrates, renters tend to have higher proportions of housing cost to income.
+
+ANOVA test:
+```{r}
+anova <- aov(HPIP ~ TEN, data = hh_data_mod)
+
+summary(anova)
+```
+
+Tukey's HSD:
+```{r}
+differences <- TukeyHSD(anova)
+
+as_tibble(cbind(pair = row.names(differences$TEN),
+                differences$TEN))
+```
+
+Boxplot:
+```{r}
+ggplot(hh_data_mod, aes(x = TEN, y = HPIP)) +
+  geom_boxplot() +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 90)) +
+  scale_x_discrete(name = "Housing tenure",
+                   labels = c ( "Owned with loan or mortgage",
+                                  "Owned without loan",
+                                  "Rented", "Occupied without payment")) +
+scale_y_continuous(name = "Housing cost as proportion of income")
+```
+
+# Relationships between two non-binary categorical variables
+
+## Lot size (ACR), internet access (ACCESS)
+
+### Households with internet access
+
+The relationship is significant.
+
+Chi-square test:
+```{r}
+chi_sq <- chisq.test(hh_data_mod$ACR, hh_data_mod$ACCESS == 
+                       "1") 
+
+chi_sq
+```
+```{r}
+chi_sq$observed
+```
+```{r}
+chi_sq$expected
+```
+
+### Households with internet access for which they do not pay
+
+The relationship is significant.
+
+Chi-square test:
+```{r}
+chi_sq <- chisq.test(hh_data_mod$ACR, hh_data_mod$ACCESS == 
+                       "2") 
+
+chi_sq
+```
+```{r}
+chi_sq$observed
+```
+```{r}
+chi_sq$expected
+```
+
+### Households without internet access
+
+The relationship is significant.
+
+Chi-square test:
+```{r}
+chi_sq <- chisq.test(hh_data_mod$ACR, hh_data_mod$ACCESS == 
+                       "3") 
+
+chi_sq
+```
+```{r}
+chi_sq$observed
+```
+```{r}
+chi_sq$expected
+```
+
+## Units per housing structure (BLD), internet access (ACCESS)
+
+### Households with internet access
+
+The relationship is significant.
+
+Chi-square test:
+```{r}
+chi_sq <- chisq.test(hh_data_mod$BLD, hh_data_mod$ACCESS == 
+                       "1") 
+
+chi_sq
+```
+```{r}
+chi_sq$observed
+```
+```{r}
+chi_sq$expected
+```
+
+### Households with internet access for which they do not pay
+
+The relationship is significant.
+
+Chi-square test:
+```{r}
+chi_sq <- chisq.test(hh_data_mod$BLD, hh_data_mod$ACCESS == 
+                       "2") 
+
+chi_sq
+```
+```{r}
+chi_sq$observed
+```
+```{r}
+chi_sq$expected
+```
+
+### Households without internet access
+
+The relationship is significant.
+
+Chi-square test:
+```{r}
+chi_sq <- chisq.test(hh_data_mod$BLD, hh_data_mod$ACCESS == 
+                       "3") 
+
+chi_sq
+```
+```{r}
+chi_sq$observed
+```
+```{r}
+chi_sq$expected
+```
+
+## Housing tenure (TEN), internet access (ACCESS)
+
+### Households with internet access
+
+The relationship is significant.
+
+Chi-square test:
+```{r}
+chi_sq <- chisq.test(hh_data_mod$BLD, hh_data_mod$ACCESS == 
+                       "1") 
+
+chi_sq
+```
+```{r}
+chi_sq$observed
+```
+```{r}
+chi_sq$expected
+```
+
+### Households with internet access for which they do not pay
+
+The relationship is significant.
+
+Chi-square test:
+```{r}
+chi_sq <- chisq.test(hh_data_mod$BLD, hh_data_mod$ACCESS == 
+                       "2") 
+
+chi_sq
+```
+```{r}
+chi_sq$observed
+```
+```{r}
+chi_sq$expected
+```
+
+### Households without internet access
+
+The relationship is significant.
+
+Chi-square test:
+```{r}
+chi_sq <- chisq.test(hh_data_mod$BLD, hh_data_mod$ACCESS == 
+                       "3") 
+
+chi_sq
+```
+```{r}
+chi_sq$observed
+```
+```{r}
+chi_sq$expected
+```
+
+```{r}
+write.csv("hh_data_mod.csv") -> hh_data_mod
+```
+
