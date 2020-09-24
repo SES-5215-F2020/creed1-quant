@@ -11,7 +11,7 @@ output:
     results: 'hide'
     warning: FALSE
     tidy: TRUE
-    error: TRUE
+    error: FALSE
 ---
 
 
@@ -41,7 +41,7 @@ ACCESS: Internet access <br>
 This dataset includes a total of 378,817 observations.
 
 
-```{r load libraries}
+```{r load libraries, message=FALSE, results='hide'}
 library(tidyverse)
 library(tidycensus)
 library(ggplot2)
