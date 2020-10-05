@@ -1,0 +1,85 @@
+---
+title: "Assignment 4"
+author: "Chadwick Reed"
+date: "10/5/2020"
+output:
+   html_document:
+    toc: TRUE
+    toc_float: true
+    toc_depth: 4
+    message: FALSE
+    results: 'hide'
+    warning: FALSE
+    tidy: TRUE
+    error: FALSE
+---
+
+```{r}
+library(tidyverse)
+```
+
+### Description
+
+In this assignment, I use regression analysis to show the extent to which internet access (**ACCESS**) in the state of California is predicted by the following variables:
+
+
+**BLD**: *Units per structure*
+<br>
+**NP**: *Number of persons per household*
+<br>
+**HPIP**: *Gross rent/ownership costs as a percentage of household income*
+
+
+### Analysis
+
+First, I will mutate BLD into fewer, shorter variable names in the interest of making my output as legible as possible. 
+```{r}
+hh_data_mod <- read.csv("hh_data_mod.csv") %>%
+  mutate(struct_type = case_when(
+    BLD_label=="2 Apartments" ~ "LT_10_apts",
+    BLD_label=="10-19 Apartments" ~ "TenTo49apts",
+    BLD_label=="One-family house detached" ~ "1SFhome",
+    BLD_label=="3-4 Apartments" ~ "LT_10_apts",
+    BLD_label=="Mobile home or trailer" ~ "MH_veh",
+    BLD_label=="50 or more apartments" ~ "GT_49_apts",
+    BLD_label=="20-49 Apartments" ~ "TenTo49apts",
+    BLD_label=="5-9 Apartments" ~ "LT_10_apts",
+    BLD_label=="One-family house attached" ~ "1SFhome",
+    BLD_label=="Boat, RV, van, etc." ~ "MH_veh"))
+```
+
+Next, I am simplifying the ACCESS variable so that there are only two results: **0** *(no internet)* and **1** *(has internet)*. My hope is that this facilitates the production of more meaningful results by my regression analysis.
+```{r}
+hh_data_mod$ACCESS[hh_data_mod$ACCESS == 2] <- 1
+hh_data_mod$ACCESS[hh_data_mod$ACCESS == 3] <- 0
+```
+
+With that done, here's my model:
+```{r}
+model <- lm(ACCESS ~ struct_type  + NP  + HPIP ,
+            data = hh_data_mod)
+
+summary(model)
+```
+
+
+### Results
+
+My analysis produced an R-squared value of roughly __.023__, or __2.3%__. My individual model coefficient values are as follows (this list is partially for my own sake, as I'm unaccustomed to interpreting values in scientific notation):
+
+
+*Intercept (single-family home)*: __.951__ <br>
+*Greater than 49 apartments per building*: __-.033__ <br>
+*10-49 apartments per building*: __-.024__ <br>
+*Less than 10 apartments per building*: __-.029__ <br>
+*Mobile home, trailer, boat, van, or recreational vehicle*: __-.089__ <br>
+*Number of persons per household*: __.008__ <br>
+*Housing cost as a proportion of household income*: __-.001__
+
+
+All P-values are well-under .05, so all are statistically significant. 
+
+
+Since ACCESS is coded into values of **0** *(no internet)* and **1** *(has internet)*, it's pretty clear that most single-family households have internet. That said, there's also a positive correlation between number of people per household and internet access, and - to further complicate things - a relatively strong negative correlation between mobile home/trailer/boat/van/rv households and internet access. Housing cost as a proportion of household income, on the other hand, does not appear to be closely correlated with internet access.
+
+When I selected these variables for Assignment 1, I hypothesized that there might be a correlation between interstructural density and internet access. The results of my analysis indicate that my hypothesis was correct, but to a limited extent (just under a 1% increase in likelihood of having internet access for every added person per household). In light of this information, one might assume that the coefficient estimate between single-family detached homes and internet access must then indicate a correlation between internet access and wealth, but the "Housing cost as a proportion of income" coefficient value seems to reflect that this is not the case either... I think that my next step would be to run this analysis with a different wealth/income-related metric that is not tied to housing cost.
