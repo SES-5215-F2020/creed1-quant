@@ -1,0 +1,122 @@
+---
+title: "Assignment 5"
+author: "Chadwick Reed"
+date: "10/8/2020"
+output:
+   html_document:
+    toc: TRUE
+    toc_float: true
+    toc_depth: 4
+    message: FALSE
+    results: 'hide'
+    warning: FALSE
+    tidy: TRUE
+    error: FALSE
+---
+
+
+```{r}
+library(tidyverse)
+library(jtools)
+library(interactions)
+library(knitr)
+```
+
+### Description
+
+In the last assignment, I used regression analysis to show the extent to which internet access (**ACCESS**) in the state of California is predicted by the following variables:
+
+
+**BLD**: *Units per structure*
+<br>
+**NP**: *Number of persons per household*
+<br>
+**HPIP**: *Gross rent/ownership costs as a percentage of household income*
+
+
+In this assignment, I add the following variables:
+
+
+**BDSP**: *Number of bedrooms per household*
+<br>
+**HINCP**: *Household income*
+<br>
+**NPPB**: *Number of people per bedroom (created by dividing the **NP** variable by **BDSP***)
+
+### Analysis
+
+First, I will mutate BLD into fewer, shorter variable names in the interest of making my output as legible as possible. 
+```{r}
+hh_data_mod <- read.csv("hh_data_mod.csv") %>%
+  mutate(struct_type = case_when(
+    BLD_label=="2 Apartments" ~ "LT_10_apts",
+    BLD_label=="10-19 Apartments" ~ "TenTo49apts",
+    BLD_label=="One-family house detached" ~ "1SFhome",
+    BLD_label=="3-4 Apartments" ~ "LT_10_apts",
+    BLD_label=="Mobile home or trailer" ~ "MH_veh",
+    BLD_label=="50 or more apartments" ~ "GT_49_apts",
+    BLD_label=="20-49 Apartments" ~ "TenTo49apts",
+    BLD_label=="5-9 Apartments" ~ "LT_10_apts",
+    BLD_label=="One-family house attached" ~ "1SFhome",
+    BLD_label=="Boat, RV, van, etc." ~ "MH_veh"))
+```
+
+
+Here, I convert all incompatible values to "NA" so that they'll be excluded from the sample during my analyses.
+```{r}
+hh_data_mod$BDSP[hh_data_mod$BDSP == -1] <-NA
+hh_data_mod$HINCP[hh_data_mod$HINCP == -60000] <-NA
+```
+
+
+Next, I am simplifying the ACCESS variable so that there are only two results: **0** *(no internet)* and **1** *(has internet)*. My hope is that this facilitates the production of more meaningful results by my regression analysis.
+```{r}
+hh_data_mod$ACCESS[hh_data_mod$ACCESS == 2] <- 1
+hh_data_mod$ACCESS[hh_data_mod$ACCESS == 3] <- 0
+```
+
+
+Finally, I create the variable 'NPPB' to measure number of persons per bedroom per household:
+```{r}
+hh_data_mod$NPPB <- hh_data_mod$NP/hh_data_mod$BDSP
+```
+
+
+With that done, here are my models:
+```{r}
+model1 <- lm(ACCESS ~ struct_type  + NP  + HPIP ,
+            data = hh_data_mod)
+
+summary(model1)
+```
+
+
+```{r}
+model2 <- lm(ACCESS ~ struct_type  + NP  + HINCP ,
+            data = hh_data_mod)
+
+summary(model2)
+```
+
+
+```{r}
+model3 <- lm(ACCESS ~ struct_type  + BDSP  + HINCP ,
+            data = hh_data_mod)
+
+summary(model3)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
