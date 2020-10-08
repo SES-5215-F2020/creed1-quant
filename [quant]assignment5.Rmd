@@ -3,31 +3,34 @@ title: "Assignment 5"
 author: "Chadwick Reed"
 date: "10/8/2020"
 output:
-   html_document:
-    toc: TRUE
+  html_document:
+    toc: true
+    toc_depth: 2
     toc_float: true
-    toc_depth: 4
+    theme: "paper"
+    code_folding: hide
     message: FALSE
     results: 'hide'
     warning: FALSE
     tidy: TRUE
-    error: FALSE
+    error: TRUE
+    echo: FALSE
 ---
 
 
-```{r}
+```{r load libraries, message=FALSE, results='hide', echo=FALSE}
 library(tidyverse)
 library(jtools)
 library(interactions)
 library(knitr)
 ```
 
-### Description
+## Introduction
 
 In the last assignment, I used regression analysis to show the extent to which internet access (**ACCESS**) in the state of California is predicted by the following variables:
 
 
-**BLD**: *Units per structure*
+**BLD/struct_type**: *Units per structure (and - unofficially - structure type)*
 <br>
 **NP**: *Number of persons per household*
 <br>
@@ -41,12 +44,15 @@ In this assignment, I add the following variables:
 <br>
 **HINCP**: *Household income*
 <br>
-**NPPB**: *Number of people per bedroom (created by dividing the **NP** variable by **BDSP***)
+__NPPB__: *Number of people per bedroom (quotient of **NP**/**BDSP**)*
+<br>
+*Variables with the "2" modifier added to the end of their abbreviated names have been manipulated to have no negative values
 
-### Analysis
+
+## Data Manipulation
 
 First, I will mutate BLD into fewer, shorter variable names in the interest of making my output as legible as possible. 
-```{r}
+```{r, message=FALSE, results='hide', echo=FALSE}
 hh_data_mod <- read.csv("hh_data_mod.csv") %>%
   mutate(struct_type = case_when(
     BLD_label=="2 Apartments" ~ "LT_10_apts",
@@ -61,62 +67,86 @@ hh_data_mod <- read.csv("hh_data_mod.csv") %>%
     BLD_label=="Boat, RV, van, etc." ~ "MH_veh"))
 ```
 
-
-Here, I convert all incompatible values to "NA" so that they'll be excluded from the sample during my analyses.
-```{r}
-hh_data_mod$BDSP[hh_data_mod$BDSP == -1] <-NA
-hh_data_mod$HINCP[hh_data_mod$HINCP == -60000] <-NA
-```
-
-
-Next, I am simplifying the ACCESS variable so that there are only two results: **0** *(no internet)* and **1** *(has internet)*. My hope is that this facilitates the production of more meaningful results by my regression analysis.
-```{r}
+Next, I simplify the __ACCESS__ variable so that there are only two results: **0** *(no internet)* and **1** *(has internet)*. My hope is that this facilitates the production of more meaningful results by my regression analysis.
+```{r, message=FALSE, results='hide', echo=FALSE}
 hh_data_mod$ACCESS[hh_data_mod$ACCESS == 2] <- 1
 hh_data_mod$ACCESS[hh_data_mod$ACCESS == 3] <- 0
 ```
 
-
-Finally, I create the variable 'NPPB' to measure number of persons per bedroom per household:
-```{r}
+Next, I create the aforementioned variable __NPPB__ to measure number of persons per bedroom per household:
+```{r, message=FALSE, results='hide', echo=FALSE}
 hh_data_mod$NPPB <- hh_data_mod$NP/hh_data_mod$BDSP
 ```
 
-
-With that done, here are my models:
+Finally, I convert all incompatible values to "NA" so that they'll be excluded from the sample during my analyses.
 ```{r}
-model1 <- lm(ACCESS ~ struct_type  + NP  + HPIP ,
+hh_data_mod$NPPB[hh_data_mod$NPPB == "Inf"] <- NA
+hh_data_mod$HINCP2 <- replace(hh_data_mod$HINCP, which(hh_data_mod$HINCP < 1), NA)
+hh_data_mod$NPPB2 <- replace(hh_data_mod$NPPB, which(hh_data_mod$NPPB < 0), NA)
+hh_data_mod$BDSP2 <- replace(hh_data_mod$BDSP, which(hh_data_mod$BDSP < 0), NA)
+```
+
+## Analysis
+
+### Regression Model 1
+
+
+This is my model from Assignment 4:
+```{r}
+model1 <- lm(ACCESS ~ struct_type + NP + HPIP,
             data = hh_data_mod)
 
 summary(model1)
 ```
 
 
+### Regression Model 2
+
+Models 2-4 reflect my attempts at improving my R-squared value. Here, I try out my new variables for the first time:
 ```{r}
-model2 <- lm(ACCESS ~ struct_type  + NP  + HINCP ,
+model2 <- lm(ACCESS ~ HINCP2 + NPPB2 + struct_type,
             data = hh_data_mod)
 
 summary(model2)
 ```
 
 
+### Regression Model 3
+
+
+Since at least one of my new variables has actually worsened my model fit, I try out some combinations of the "old" and "new" variables:
 ```{r}
-model3 <- lm(ACCESS ~ struct_type  + BDSP  + HINCP ,
+model3 <- lm(ACCESS ~ HINCP2 + NP + struct_type,
             data = hh_data_mod)
 
 summary(model3)
 ```
 
 
+### Regression Model 4
 
 
+While NPPB would seem to be a better measure of interstructural density, it is a worse fit for my model. This bodes poorly for my hypothesis (re the relationship between interstructural density and internet access), which seems pretty likely to be wrong at this point. In this model, I revert to HPIP from HINCP to see which is a more fitting income-related measure. 
+```{r}
+model4 <- lm(ACCESS ~ HPIP + NP + struct_type,
+            data = hh_data_mod)
+
+summary(model4)
+```
 
 
+## Final Model
 
 
+Looks like the HINCP variable produces better model fit. I tried out a few more models, but I don't think they're very interesting, so I'll skip to my final, log-transformed, interaction-ed model:
+```{r}
+model5 <- lm(ACCESS ~ log(HINCP2) + NP + struct_type + log(HINCP2):struct_type,
+            data = hh_data_mod)
 
+summary(model5)
+```
 
+### Conclusion
 
-
-
-
+5.3% is more than double my original R-squared value, so I am pretty happy with this. I'll save my in-depth visualizations and analysis for the final assignment, but generally speaking, I think my hypothesis was proven incorrect. There are some correlations that suggest otherwise, but overall, it's clear that internet access is much more meaningfully connected to factors like housing type, income, etc. 
 
